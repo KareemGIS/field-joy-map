@@ -40,8 +40,8 @@ export default function Auth() {
         const parsed = signUpSchema.safeParse(form);
         if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
         const { error } = await supabase.auth.signUp({
-          email: parsed.data.email,
-          password: parsed.data.password,
+          email: parsed.data.email!,
+          password: parsed.data.password!,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: { full_name: parsed.data.fullName },
@@ -52,7 +52,7 @@ export default function Auth() {
       } else {
         const parsed = signInSchema.safeParse(form);
         if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
-        const { error } = await supabase.auth.signInWithPassword(parsed.data);
+        const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email!, password: parsed.data.password! });
         if (error) { toast.error(error.message); return; }
         toast.success("Signed in");
       }

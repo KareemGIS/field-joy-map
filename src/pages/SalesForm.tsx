@@ -73,7 +73,16 @@ export default function SalesForm() {
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setSubmitting(true);
     const { error } = await supabase.from("submissions").insert({
-      ...parsed.data,
+      customer_name: parsed.data.customer_name!,
+      invoice_number: parsed.data.invoice_number!,
+      address: parsed.data.address!,
+      phone: parsed.data.phone!,
+      sales_rep: parsed.data.sales_rep,
+      region: parsed.data.region,
+      district: parsed.data.district,
+      sector: parsed.data.sector,
+      territory: parsed.data.territory,
+      sales_team: parsed.data.sales_team,
       latitude: gps.lat,
       longitude: gps.lng,
       user_id: user!.id,
