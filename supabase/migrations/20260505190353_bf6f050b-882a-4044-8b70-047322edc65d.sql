@@ -102,12 +102,6 @@ CREATE TABLE public.sectors (
   code TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE public.territories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  code TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
 CREATE TABLE public.sales_teams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
