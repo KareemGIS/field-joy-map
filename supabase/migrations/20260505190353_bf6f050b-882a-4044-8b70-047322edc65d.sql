@@ -113,7 +113,7 @@ CREATE TABLE public.sales_teams (
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['sales_reps','regions','districts','sectors','territories','sales_teams']
+FOREACH t IN ARRAY ARRAY['sales_reps','regions','districts','sectors','sales_teams']
   LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
     EXECUTE format('CREATE POLICY "Authenticated can read %1$s" ON public.%1$I FOR SELECT TO authenticated USING (true);', t);
