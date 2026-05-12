@@ -16,7 +16,6 @@ const tables = [
   { key: "regions", labelKey: "region" },
   { key: "districts", labelKey: "district" },
   { key: "sectors", labelKey: "sector" },
-  { key: "territories", labelKey: "territory" },
   { key: "sales_teams", labelKey: "salesTeam" },
 ] as const;
 
