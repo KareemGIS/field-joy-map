@@ -13,92 +13,171 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 
-const masterTables = ["sales_reps", "regions", "districts", "sectors", "territories", "sales_teams"] as const;
+const masterTables = [
+  "sales_reps",
+  "regions",
+  "districts",
+  "sectors",
+  "sales_teams",
+] as const;
+
 type MasterKey = typeof masterTables[number];
 
 const schema = z.object({
-  customer_name: z.string().trim().min(1).max(150),
-  invoice_number: z.string().trim().min(1).max(60),
-  address: z.string().trim().min(1).max(500),
-  phone: z.string().trim().regex(/^[0-9+\-\s()]{6,20}$/),
-  sales_rep: z.string().min(1),
-  region: z.string().min(1),
-  district: z.string().min(1),
-  sector: z.string().min(1),
-  territory: z.string().min(1),
-  sales_team: z.string().min(1),
+  client_name: z.string().trim().min(1, "Client name is required").max(150),
+  company_name: z.string().trim().min(1, "Company name is required").max(150),
+  address: z.string().trim().min(1, "Address is required").max(500),
+  district: z.string().min(1, "District is required"),
+  region: z.string().min(1, "Region is required"),
+  phone: z.string().trim().regex(/^[0-9+\-\s()]{6,20}$/, "Invalid phone number"),
+  sector_department: z.string().min(1, "Sector / Department is required"),
+  salesperson: z.string().min(1, "Salesperson is required"),
+  sales_team: z.string().min(1, "Sales team is required"),
 });
+
+const initialForm = {
+  client_name: "",
+  company_name: "",
+  address: "",
+  district: "",
+  region: "",
+  phone: "",
+  sector_department: "",
+  salesperson: "",
+  sales_team: "",
+};
 
 export default function SalesForm() {
   const { user } = useAuth();
   const { t } = useI18n();
+
   const [options, setOptions] = useState<Record<MasterKey, Option[]>>({
-    sales_reps: [], regions: [], districts: [], sectors: [], territories: [], sales_teams: [],
+    sales_reps: [],
+    regions: [],
+    districts: [],
+    sectors: [],
+    sales_teams: [],
   });
-  const [form, setForm] = useState({
-    customer_name: "", invoice_number: "", address: "", phone: "",
-    sales_rep: "", region: "", district: "", sector: "", territory: "", sales_team: "",
-  });
+
+  const [form, setForm] = useState(initialForm);
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    async function loadDropdowns() {
       const results = await Promise.all(
-        masterTables.map((tbl) => supabase.from(tbl).select("name").order("name"))
+        masterTables.map((tableName) =>
+          supabase.from(tableName).select("name").order("name")
+        )
       );
-      const next: any = {};
-      masterTables.forEach((tbl, i) => {
-        next[tbl] = (results[i].data ?? []).map((r: any) => ({ value: r.name, label: r.name }));
+
+      const next = {} as Record<MasterKey, Option[]>;
+
+      masterTables.forEach((tableName, index) => {
+        next[tableName] = (results[index].data ?? []).map((row: any) => ({
+          value: row.name,
+          label: row.name,
+        }));
       });
+
       setOptions(next);
-    })();
+    }
+
+    loadDropdowns();
   }, []);
 
   function captureGps() {
-    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported");
+      return;
+    }
+
     setLocating(true);
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); toast.success(t("gpsCaptured")); },
-      (err) => { setLocating(false); toast.error(err.message || t("locationDenied")); },
-      { enableHighAccuracy: true, timeout: 15000 }
+      (position) => {
+        setGps({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+
+        setLocating(false);
+        toast.success(t("gpsCaptured"));
+      },
+      (error) => {
+        setLocating(false);
+        toast.error(error.message || t("locationDenied"));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+      }
     );
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!gps) { toast.error(t("captureGpsFirst")); return; }
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!user) {
+      toast.error("You must be logged in first");
+      return;
+    }
+
+    if (!gps) {
+      toast.error(t("captureGpsFirst"));
+      return;
+    }
+
     const parsed = schema.safeParse(form);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
+
     setSubmitting(true);
+
     const { error } = await supabase.from("submissions").insert({
-      customer_name: parsed.data.customer_name!,
-      invoice_number: parsed.data.invoice_number!,
-      address: parsed.data.address!,
-      phone: parsed.data.phone!,
-      sales_rep: parsed.data.sales_rep,
-      region: parsed.data.region,
+      client_name: parsed.data.client_name,
+      company_name: parsed.data.company_name,
+      address: parsed.data.address,
       district: parsed.data.district,
-      sector: parsed.data.sector,
-      territory: parsed.data.territory,
+      region: parsed.data.region,
+      phone: parsed.data.phone,
+      sector_department: parsed.data.sector_department,
+      salesperson: parsed.data.salesperson,
       sales_team: parsed.data.sales_team,
       latitude: gps.lat,
       longitude: gps.lng,
-      user_id: user!.id,
+      user_id: user.id,
       device_info: navigator.userAgent.slice(0, 200),
     });
+
     setSubmitting(false);
-    if (error) { toast.error(error.message); return; }
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     toast.success(t("submissionSuccess"));
-    setForm({ customer_name: "", invoice_number: "", address: "", phone: "", sales_rep: "", region: "", district: "", sector: "", territory: "", sales_team: "" });
+    setForm(initialForm);
     setGps(null);
   }
 
-  const sel = (k: MasterKey, formKey: keyof typeof form) => (
+  const selectField = (
+    tableName: MasterKey,
+    formKey: keyof typeof form,
+    label: string
+  ) => (
     <div className="space-y-1.5">
-      <Label>{t(formKey as any)}</Label>
-      <SearchableSelect options={options[k]} value={form[formKey]} onChange={(v) => setForm({ ...form, [formKey]: v })} />
+      <Label>{label}</Label>
+      <SearchableSelect
+        options={options[tableName]}
+        value={form[formKey]}
+        onChange={(value) => setForm({ ...form, [formKey]: value })}
+      />
     </div>
   );
 
@@ -114,24 +193,48 @@ export default function SalesForm() {
           <Card className="shadow-md border-2">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" /> {t("gpsLocation")}
+                <MapPin className="h-4 w-4 text-primary" />
+                {t("gpsLocation")}
               </CardTitle>
             </CardHeader>
+
             <CardContent>
               {gps ? (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-success/10 border border-success/20">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-success" />
                     <div className="text-sm">
-                      <div className="font-medium text-success">{t("gpsCaptured")}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</div>
+                      <div className="font-medium text-success">
+                        {t("gpsCaptured")}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
+                      </div>
                     </div>
                   </div>
-                  <Button type="button" variant="ghost" size="sm" onClick={captureGps}>↻</Button>
+
+                  <Button type="button" variant="ghost" size="sm" onClick={captureGps}>
+                    ↻
+                  </Button>
                 </div>
               ) : (
-                <Button type="button" onClick={captureGps} disabled={locating} className="w-full h-12 bg-gradient-primary shadow-md hover:shadow-glow transition-smooth animate-pulse-glow">
-                  {locating ? <><Loader2 className="h-4 w-4 animate-spin me-2" /> {t("locating")}</> : <><MapPin className="h-4 w-4 me-2" /> {t("captureGps")}</>}
+                <Button
+                  type="button"
+                  onClick={captureGps}
+                  disabled={locating}
+                  className="w-full h-12 bg-gradient-primary shadow-md hover:shadow-glow transition-smooth animate-pulse-glow"
+                >
+                  {locating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin me-2" />
+                      {t("locating")}
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4 me-2" />
+                      {t("captureGps")}
+                    </>
+                  )}
                 </Button>
               )}
             </CardContent>
@@ -141,38 +244,73 @@ export default function SalesForm() {
             <CardContent className="pt-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("customerName")}</Label>
-                  <Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="h-11" />
+                  <Label>Client Name</Label>
+                  <Input
+                    value={form.client_name}
+                    onChange={(e) =>
+                      setForm({ ...form, client_name: e.target.value })
+                    }
+                    className="h-11"
+                  />
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label>{t("invoiceNumber")}</Label>
-                  <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} className="h-11" />
+                  <Label>Company Name</Label>
+                  <Input
+                    value={form.company_name}
+                    onChange={(e) =>
+                      setForm({ ...form, company_name: e.target.value })
+                    }
+                    className="h-11"
+                  />
                 </div>
               </div>
+
               <div className="space-y-1.5">
-                <Label>{t("address")}</Label>
-                <Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} />
+                <Label>Address</Label>
+                <Textarea
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  rows={2}
+                />
               </div>
+
               <div className="space-y-1.5">
-                <Label>{t("phone")}</Label>
-                <Input type="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11" />
+                <Label>Phone</Label>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="h-11"
+                />
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6 grid sm:grid-cols-2 gap-4">
-              {sel("sales_reps", "sales_rep")}
-              {sel("regions", "region")}
-              {sel("districts", "district")}
-              {sel("sectors", "sector")}
-              {sel("territories", "territory")}
-              {sel("sales_teams", "sales_team")}
+              {selectField("districts", "district", "District")}
+              {selectField("regions", "region", "Region")}
+              {selectField("sectors", "sector_department", "Sector / Department")}
+              {selectField("sales_reps", "salesperson", "Salesperson")}
+              {selectField("sales_teams", "sales_team", "Sales Team")}
             </CardContent>
           </Card>
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 bg-gradient-primary shadow-md hover:shadow-glow transition-smooth text-base font-semibold">
-            {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Send className="h-4 w-4 me-2" /> {t("submit")}</>}
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-12 bg-gradient-primary shadow-md hover:shadow-glow transition-smooth text-base font-semibold"
+          >
+            {submitting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <Send className="h-4 w-4 me-2" />
+                {t("submit")}
+              </>
+            )}
           </Button>
         </form>
       </div>
