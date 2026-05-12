@@ -145,24 +145,10 @@ export type Database = {
       }
       submissions: {
         Row: {
-          address: string
-          created_at: string
-          customer_name: string
-          device_info: string | null
-          district: string | null
-          id: string
-          invoice_number: string
-          latitude: number
-          longitude: number
-          notes: string | null
-          phone: string
-          region: string | null
-          sales_rep: string | null
-          sales_team: string | null
-          sector: string | null
-          territory: string | null
-          updated_at: string
-          user_id: string
+         client_name
+company_name
+sector_department
+salesperson
         }
         Insert: {
           address: string
