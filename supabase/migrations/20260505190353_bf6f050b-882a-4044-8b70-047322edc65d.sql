@@ -128,25 +128,27 @@ BEGIN
 END$$;
 
 -- Submissions
-CREATE TABLE public.submissions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  customer_name TEXT NOT NULL,
-  invoice_number TEXT NOT NULL UNIQUE,
-  address TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  latitude DOUBLE PRECISION NOT NULL,
-  longitude DOUBLE PRECISION NOT NULL,
-  sales_rep TEXT,
-  region TEXT,
-  district TEXT,
-  sector TEXT,
-  territory TEXT,
-  sales_team TEXT,
-  device_info TEXT,
-  notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+create table public.submissions (
+  id uuid primary key default gen_random_uuid(),
+
+  client_name text not null,
+  company_name text not null,
+  address text not null,
+  district text not null,
+  region text not null,
+  phone text not null,
+  sector_department text not null,
+  salesperson text not null,
+  sales_team text not null,
+
+  latitude double precision not null,
+  longitude double precision not null,
+
+  user_id uuid not null references auth.users(id) on delete cascade,
+  device_info text,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 ALTER TABLE public.submissions ENABLE ROW LEVEL SECURITY;
