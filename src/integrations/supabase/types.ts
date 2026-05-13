@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -145,71 +143,58 @@ export type Database = {
       }
       submissions: {
         Row: {
-         client_name
-company_name
-sector_department
-salesperson
+          address: string
+          client_name: string
+          company_name: string
+          created_at: string
+          device_info: string | null
+          district: string
+          id: string
+          latitude: number
+          longitude: number
+          phone: string
+          region: string
+          sales_team: string
+          salesperson: string
+          sector_department: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
           address: string
+          client_name: string
+          company_name: string
           created_at?: string
-          customer_name: string
           device_info?: string | null
-          district?: string | null
+          district: string
           id?: string
-          invoice_number: string
           latitude: number
           longitude: number
-          notes?: string | null
           phone: string
-          region?: string | null
-          sales_rep?: string | null
-          sales_team?: string | null
-          sector?: string | null
-          territory?: string | null
+          region: string
+          sales_team: string
+          salesperson: string
+          sector_department: string
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string
+          client_name?: string
+          company_name?: string
           created_at?: string
-          customer_name?: string
           device_info?: string | null
-          district?: string | null
+          district?: string
           id?: string
-          invoice_number?: string
           latitude?: number
           longitude?: number
-          notes?: string | null
           phone?: string
-          region?: string | null
-          sales_rep?: string | null
-          sales_team?: string | null
-          sector?: string | null
-          territory?: string | null
+          region?: string
+          sales_team?: string
+          salesperson?: string
+          sector_department?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      territories: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          name?: string
         }
         Relationships: []
       }
